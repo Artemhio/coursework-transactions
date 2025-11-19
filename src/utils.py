@@ -35,3 +35,36 @@ def load_transactions(file_path: Optional[Path] = None) -> pd.DataFrame:
             df[col] = pd.to_datetime(df[col], errors="coerce")
 
     return df
+
+
+def parse_datetime(datetime_str: str) -> datetime:
+    """
+    Разбирает строку с датой и временем в формате 'YYYY-MM-DD HH:MM:SS'.
+
+    Параметры:
+    ----------
+    datetime_str : str
+        Строка с датой и временем.
+
+    Возвращает:
+    -----------
+    datetime
+        Объект datetime, соответствующий переданной строке.
+
+    Исключения:
+    -----------
+    ValueError
+        Если формат строки некорректен.
+    """
+    logger.info("Разбор строки даты/времени: %s", datetime_str)
+
+    try:
+        dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError as exc:
+        logger.error("Некорректный формат даты/времени: %s", datetime_str)
+        raise ValueError(
+            "Дата и время должны быть в формате 'YYYY-MM-DD HH:MM:SS'."
+        ) from exc
+
+    logger.debug("Строка даты/времени разобрана успешно: %s", dt.isoformat())
+    return dt
