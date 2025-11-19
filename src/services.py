@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Dict, List
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -32,21 +32,11 @@ def _search_dataframe(df: pd.DataFrame, query: str) -> pd.DataFrame:
     lower_query = query.lower()
 
     if "Описание" in df.columns:
-        desc_mask = (
-            df["Описание"]
-            .astype(str)
-            .str.lower()
-            .str.contains(lower_query)
-        )
+        desc_mask = df["Описание"].astype(str).str.lower().str.contains(lower_query)
         mask |= desc_mask
 
     if "Категория" in df.columns:
-        cat_mask = (
-            df["Категория"]
-            .astype(str)
-            .str.lower()
-            .str.contains(lower_query)
-        )
+        cat_mask = df["Категория"].astype(str).str.lower().str.contains(lower_query)
         mask |= cat_mask
 
     return df[mask].copy()
