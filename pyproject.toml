@@ -5,6 +5,8 @@ description = ""
 authors = ["Artem <artemiy9999@gmail.com>"]
 readme = "README.md"
 
+packages = [{ include = "src" }]
+
 [tool.poetry.dependencies]
 python = "^3.12"
 pandas = "^2.3.3"
