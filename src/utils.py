@@ -37,7 +37,7 @@ def load_transactions(file_path: Optional[Path] = None) -> pd.DataFrame:
     # Пробуем привести текстовые даты к типу datetime
     for col in ("Дата операции", "Дата платежа"):
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
+            df[col] = pd.to_datetime(df[col], errors="coerce", dayfirst=True)
 
     logger.debug("Загружено %d транзакций.", len(df))
 
