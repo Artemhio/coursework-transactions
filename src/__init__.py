@@ -1,0 +1,1 @@
+"""Package for transactions coursework project."""
