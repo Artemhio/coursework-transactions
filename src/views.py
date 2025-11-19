@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 from src.reports import spending_by_category
 from src.utils import load_transactions, parse_datetime
