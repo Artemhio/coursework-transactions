@@ -7,7 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+pandas = "^2.3.3"
+openpyxl = "^3.1.5"
+python-dotenv = "^1.2.1"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.1"
+flake8 = "^7.3.0"
 
 [build-system]
 requires = ["poetry-core"]
