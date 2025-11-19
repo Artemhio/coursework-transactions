@@ -17,7 +17,14 @@ python-dotenv = "^1.2.1"
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.1"
 flake8 = "^7.3.0"
+black = "^25.11.0"
+isort = "^7.0.0"
+mypy = "^1.18.2"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
