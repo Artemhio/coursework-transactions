@@ -20,6 +20,7 @@ flake8 = "^7.3.0"
 black = "^25.11.0"
 isort = "^7.0.0"
 mypy = "^1.18.2"
+pytest-cov = "^7.0.0"
 
 [build-system]
 requires = ["poetry-core"]
