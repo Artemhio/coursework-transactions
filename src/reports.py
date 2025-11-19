@@ -135,9 +135,12 @@ def build_spending_by_category_report(
             len(filtered),
         )
 
+    # Заготавливаем переменную под результат (одна аннотация на всю функцию)
+    result: Dict[str, Any]
+
     if filtered.empty:
         logger.warning("Нет транзакций для указанного периода и категории.")
-        result: Dict[str, Any] = {
+        result = {
             "category": category,
             "start_date": start_date_str,
             "end_date": end_date.strftime("%Y-%m-%d"),
@@ -159,7 +162,7 @@ def build_spending_by_category_report(
             },
         )
 
-    result: Dict[str, Any] = {
+    result = {
         "category": category,
         "start_date": start_date_str,
         "end_date": end_date.strftime("%Y-%m-%d"),
