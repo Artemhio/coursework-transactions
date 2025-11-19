@@ -1,7 +1,12 @@
+import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
+
+logger = logging.getLogger(__name__)
+
 
 # Стандартный путь к Excel-файлу с транзакциями
 # (лежит в папке data/operations.xlsx)
@@ -23,16 +28,18 @@ def load_transactions(file_path: Optional[Path] = None) -> pd.DataFrame:
     pd.DataFrame
         Таблица всех транзакций.
     """
-    # Если путь не указан — берём путь по умолчанию
     path = file_path or DEFAULT_DATA_PATH
 
-    # Чтение Excel-файла
+    logger.info("Загрузка транзакций из файла: %s", path)
+
     df = pd.read_excel(path)
 
     # Пробуем привести текстовые даты к типу datetime
     for col in ("Дата операции", "Дата платежа"):
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce")
+
+    logger.debug("Загружено %d транзакций.", len(df))
 
     return df
 
