@@ -1,8 +1,9 @@
 import json
 import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -97,33 +98,30 @@ def build_spending_by_category_report(
         start_date_str,
     )
 
-    # Парсим дату начала периода
     try:
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
     except ValueError as exc:
         logger.error("Некорректный формат даты: %s", start_date_str)
         raise ValueError("Дата должна быть в формате 'YYYY-MM-DD'.") from exc
 
-    # Конец трёхмесячного периода (условно: 90 дней)
     end_date = start_date + timedelta(days=90)
 
-    # Убеждаемся, что дата-колонка в datetime
     if date_column not in df.columns:
         raise ValueError(f"В данных отсутствует столбец '{date_column}'.")
 
-    df = df.copy()
-    df[date_column] = pd.to_datetime(df[date_column], errors="coerce")
+    filtered = df.copy()
+    filtered[date_column] = pd.to_datetime(filtered[date_column], errors="coerce")
 
-    # Фильтрация по дате
-    date_mask = (df[date_column] >= start_date) & (df[date_column] < end_date)
-    filtered = df[date_mask]
+    date_mask = (filtered[date_column] >= start_date) & (
+        filtered[date_column] < end_date
+    )
+    filtered = filtered[date_mask]
 
     logger.debug(
         "После фильтрации по датам осталось %d транзакций.",
         len(filtered),
     )
 
-    # Фильтрация по категории (если указана)
     if category is not None:
         if "Категория" not in filtered.columns:
             raise ValueError("В данных отсутствует столбец 'Категория'.")
@@ -137,10 +135,9 @@ def build_spending_by_category_report(
             len(filtered),
         )
 
-    # Если данных нет — возвращаем пустой отчёт
     if filtered.empty:
         logger.warning("Нет транзакций для указанного периода и категории.")
-        result = {
+        result: Dict[str, Any] = {
             "category": category,
             "start_date": start_date_str,
             "end_date": end_date.strftime("%Y-%m-%d"),
@@ -149,12 +146,11 @@ def build_spending_by_category_report(
         }
         return json.dumps(result, ensure_ascii=False)
 
-    # Считаем по категориям (на случай category=None берём все)
     grouped = spending_by_category(filtered, amount_column=amount_column)
 
     total_amount = float(grouped[amount_column].sum())
 
-    items: list[dict] = []
+    items: List[Dict[str, Any]] = []
     for _, row in grouped.iterrows():
         items.append(
             {
@@ -163,7 +159,7 @@ def build_spending_by_category_report(
             },
         )
 
-    result = {
+    result: Dict[str, Any] = {
         "category": category,
         "start_date": start_date_str,
         "end_date": end_date.strftime("%Y-%m-%d"),
@@ -177,5 +173,4 @@ def build_spending_by_category_report(
         len(items),
     )
 
-    # Возвращаем JSON-строку, как требует ТЗ (JSON-ответ)
     return json.dumps(result, ensure_ascii=False)
