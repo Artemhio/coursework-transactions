@@ -28,3 +28,24 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.black]
+line-length = 119
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | \.mypy_cache
+    | \.pytest_cache
+)/
+'''
+
+[tool.isort]
+line_length = 119
+profile = "black"
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+warn_return_any = true
+exclude = "(venv|\\.venv)"
