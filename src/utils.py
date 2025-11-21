@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd  # type: ignore[import-untyped]
+import requests  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -75,3 +76,28 @@ def parse_datetime(datetime_str: str) -> datetime:
 
     logger.debug("Строка даты/времени разобрана успешно: %s", dt.isoformat())
     return dt
+
+
+def fetch_external_api_status() -> dict[str, Any]:
+    """
+    Выполняет простой GET-запрос к внешнему API и возвращает информацию о статусе.
+
+    Используется на главной странице, чтобы продемонстрировать работу с API.
+    В случае ошибки возвращает статус с признаком недоступности.
+    """
+    url = "https://api.github.com"
+
+    try:
+        response = requests.get(url, timeout=3)
+        return {
+            "url": url,
+            "status_code": response.status_code,
+            "ok": response.ok,
+        }
+    except Exception:
+        logger.exception("Ошибка при обращении к внешнему API: %s", url)
+        return {
+            "url": url,
+            "status_code": None,
+            "ok": False,
+        }
