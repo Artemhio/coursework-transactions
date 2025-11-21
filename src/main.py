@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 from src.reports import build_spending_by_category_report
@@ -19,12 +20,15 @@ def main() -> None:
     data_path = Path("data") / "operations.xlsx"
     df = load_transactions(data_path)
 
+    # Текущее время для контекста главной страницы
+    current_time = datetime.now()
+
     # 1. Краткая информация
     print("=== Transactions summary ===")
     print(f"Total transactions: {len(df)}")
 
-    # 2. Главная страница (контекст)
-    main_context = build_main_page_context(df)
+    # 2. Главная страница (контекст по ТЗ)
+    main_context = build_main_page_context(df, current_time=current_time)
     print("\n=== Main page context ===")
     print(main_context)
 
