@@ -5,81 +5,138 @@ from typing import Any, Dict, List
 
 import pandas as pd  # type: ignore[import-untyped]
 
-from src.reports import spending_by_category
-from src.utils import fetch_external_api_status, load_transactions, parse_datetime
+from src.utils import (
+    fetch_currency_rates,
+    fetch_stock_prices,
+    load_transactions,
+    load_user_settings,
+    parse_datetime,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def get_index_context() -> dict:
     """
-    Простейший контекст для главной страницы.
+    Простейший контекст для заглушки главной страницы.
 
-    Нужен для базового теста.
-    Основной "умный" контекст строится функцией build_main_page_context.
+    Используется в базовом тесте.
     """
     return {"title": "Transactions dashboard"}
 
 
-def build_main_page_context(
-    df: pd.DataFrame,
-    generated_at: datetime | None = None,
-) -> Dict[str, Any]:
+def _get_month_period(current_time: datetime) -> tuple[datetime, datetime]:
     """
-    Собирает контекст для главной страницы с общей статистикой.
-
-    В контекст включаем:
-    - заголовок страницы,
-    - общее количество транзакций,
-    - общую сумму трат,
-    - топ-3 категорий по сумме трат,
-    - время генерации отчёта (если передано).
-
-    Параметры:
-    ----------
-    df : pd.DataFrame
-        Таблица исходных транзакций.
-    generated_at : datetime | None
-        Момент времени, когда формируется контекст (может быть None).
-
-    Возвращает:
-    -----------
-    dict
-        Словарь, который удобно отдавать как JSON.
+    Возвращает начало и конец периода:
+    с первого дня месяца по указанную дату (включительно).
     """
-    total_transactions = len(df)
+    start = current_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    end = current_time
+    return start, end
 
-    # Определяем, есть ли в данных столбец "Сумма платежа"
-    amount_column = "Сумма платежа" if "Сумма платежа" in df.columns else None
 
-    total_amount = None
-    top_categories: List[Dict[str, Any]] = []
+def _get_greeting(current_time: datetime) -> str:
+    """
+    Возвращает приветствие в зависимости от времени суток.
+    """
+    hour = current_time.hour
+    if 5 <= hour < 12:
+        return "Доброе утро"
+    if 12 <= hour < 18:
+        return "Добрый день"
+    if 18 <= hour < 23:
+        return "Добрый вечер"
+    return "Доброй ночи"
 
-    if amount_column:
-        total_amount = float(df[amount_column].sum())
 
-        by_category_df = spending_by_category(df, amount_column=amount_column)
+def _build_cards(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """
+    Формирует список карт с суммой трат и кешбэком.
 
-        for _, row in by_category_df.head(3).iterrows():
-            top_categories.append(
-                {
-                    "category": row["Категория"],
-                    "amount": float(row[amount_column]),
-                }
-            )
+    Использует столбцы:
+    - "Номер карты"
+    - "Сумма платежа"
+    """
+    if "Номер карты" not in df.columns or "Сумма платежа" not in df.columns:
+        return []
 
-    context: Dict[str, Any] = {
-        "title": "Transactions dashboard",
-        "total_transactions": total_transactions,
-        "total_amount": total_amount,
-        "top_categories": top_categories,
+    grouped = (
+        df.groupby("Номер карты", dropna=False)["Сумма платежа"]
+        .sum()
+        .reset_index()
+        .sort_values(by="Сумма платежа", ascending=False)
+    )
+
+    cards: List[Dict[str, Any]] = []
+    for _, row in grouped.iterrows():
+        last_digits = str(row["Номер карты"])
+        total_spent = float(row["Сумма платежа"])
+        cashback = round(total_spent / 100, 2)  # 1 рубль на каждые 100 рублей
+
+        cards.append(
+            {
+                "last_digits": last_digits,
+                "total_spent": total_spent,
+                "cashback": cashback,
+            }
+        )
+    return cards
+
+
+def _build_top_transactions(df: pd.DataFrame, limit: int = 5) -> List[Dict[str, Any]]:
+    """
+    Формирует топ-N транзакций по сумме платежа.
+    """
+    if "Сумма платежа" not in df.columns:
+        return []
+
+    work_df = df.copy()
+    if "Дата операции" in work_df.columns:
+        work_df["Дата операции"] = pd.to_datetime(
+            work_df["Дата операции"],
+            errors="coerce",
+            dayfirst=True,
+        )
+
+    work_df = work_df.sort_values(by="Сумма платежа", ascending=False).head(limit)
+
+    result: List[Dict[str, Any]] = []
+    for _, row in work_df.iterrows():
+        date_val = row.get("Дата операции")
+        if isinstance(date_val, datetime):
+            date_str = date_val.strftime("%d.%m.%Y")
+        else:
+            date_str = str(date_val) if date_val is not None else ""
+
+        result.append(
+            {
+                "date": date_str,
+                "amount": float(row["Сумма платежа"]),
+                "category": str(row.get("Категория", "")),
+                "description": str(row.get("Описание", "")),
+            }
+        )
+    return result
+
+
+def build_main_page_context(df: pd.DataFrame, current_time: datetime) -> Dict[str, Any]:
+    """
+    Формирует базовый контекст для главной страницы без курсов и акций.
+
+    Содержит:
+    - greeting
+    - cards
+    - top_transactions
+    """
+    greeting = _get_greeting(current_time)
+    cards = _build_cards(df)
+    top_transactions = _build_top_transactions(df)
+
+    return {
+        "greeting": greeting,
+        "cards": cards,
+        "top_transactions": top_transactions,
     }
-
-    if generated_at is not None:
-        # Сохраняем время генерации в ISO-формате
-        context["generated_at"] = generated_at.isoformat(sep=" ")
-
-    return context
 
 
 def main_page(current_time_str: str) -> str:
@@ -87,21 +144,52 @@ def main_page(current_time_str: str) -> str:
     Функция для страницы «Главная».
 
     Принимает строку с датой и временем в формате "YYYY-MM-DD HH:MM:SS",
-    загружает транзакции из Excel, формирует общую статистику,
-    запрашивает внешний API и возвращает JSON-строку с контекстом.
+    фильтрует транзакции по периоду с начала месяца по указанную дату,
+    строит контекст и добавляет курсы валют и цены акций.
+
+    Возвращает JSON-строку с ключами:
+    - greeting
+    - cards
+    - top_transactions
+    - currency_rates
+    - stock_prices
     """
     logger.info("Запрос главной страницы. current_time=%s", current_time_str)
 
     current_time = parse_datetime(current_time_str)
 
     df = load_transactions()
-    logger.debug("Для главной страницы загружено %d транзакций.", len(df))
+    logger.debug("Всего загружено транзакций: %d", len(df))
 
-    context = build_main_page_context(df, generated_at=current_time)
+    # Фильтрация по периоду
+    start_date, end_date = _get_month_period(current_time)
 
-    # Работа с внешним API
-    api_status = fetch_external_api_status()
-    context["external_api"] = api_status
+    if "Дата операции" in df.columns:
+        df["Дата операции"] = pd.to_datetime(
+            df["Дата операции"],
+            errors="coerce",
+            dayfirst=True,
+        )
+        mask = (df["Дата операции"] >= start_date) & (df["Дата операции"] <= end_date)
+        period_df = df[mask].copy()
+    else:
+        period_df = df.copy()
+
+    logger.debug("Транзакций в выбранном периоде: %d", len(period_df))
+
+    # Базовый контекст (greeting, cards, top_transactions)
+    context = build_main_page_context(period_df, current_time)
+
+    # Пользовательские настройки (валюты и акции)
+    settings = load_user_settings()
+    currencies = settings.get("user_currencies", [])
+    stocks = settings.get("user_stocks", [])
+
+    currency_rates = fetch_currency_rates(currencies)
+    stock_prices = fetch_stock_prices(stocks)
+
+    context["currency_rates"] = currency_rates
+    context["stock_prices"] = stock_prices
 
     response_json = json.dumps(context, ensure_ascii=False)
 
