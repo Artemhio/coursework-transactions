@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import pandas as pd  # type: ignore[import-untyped]
 
 from src.reports import spending_by_category
-from src.utils import load_transactions, parse_datetime
+from src.utils import fetch_external_api_status, load_transactions, parse_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -87,32 +87,22 @@ def main_page(current_time_str: str) -> str:
     Функция для страницы «Главная».
 
     Принимает строку с датой и временем в формате "YYYY-MM-DD HH:MM:SS",
-    загружает транзакции из Excel, формирует общую статистику
-    и возвращает JSON-строку с контекстом.
-
-    Параметры:
-    ----------
-    current_time_str : str
-        Строка с датой и временем в формате "YYYY-MM-DD HH:MM:SS".
-
-    Возвращает:
-    -----------
-    str
-        JSON-строка с контекстом главной страницы.
+    загружает транзакции из Excel, формирует общую статистику,
+    запрашивает внешний API и возвращает JSON-строку с контекстом.
     """
     logger.info("Запрос главной страницы. current_time=%s", current_time_str)
 
-    # Разбираем строку даты/времени
     current_time = parse_datetime(current_time_str)
 
-    # Загружаем все транзакции
     df = load_transactions()
     logger.debug("Для главной страницы загружено %d транзакций.", len(df))
 
-    # Собираем словарь-контекст
     context = build_main_page_context(df, generated_at=current_time)
 
-    # Преобразуем в JSON-строку (готовый JSON-ответ)
+    # Работа с внешним API
+    api_status = fetch_external_api_status()
+    context["external_api"] = api_status
+
     response_json = json.dumps(context, ensure_ascii=False)
 
     logger.info("Контекст главной страницы сформирован успешно.")
