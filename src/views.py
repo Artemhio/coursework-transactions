@@ -64,7 +64,7 @@ def _build_cards(df: pd.DataFrame) -> List[Dict[str, Any]]:
         df.groupby("Номер карты", dropna=False)["Сумма платежа"]
         .sum()
         .reset_index()
-        .sort_values(by="Сумма платежа", ascending=False)
+        .sort_values(by="Номер карты", ascending=True)
     )
 
     cards: List[Dict[str, Any]] = []
