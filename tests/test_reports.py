@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import json
 from unittest.mock import patch
 

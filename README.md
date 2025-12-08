@@ -143,3 +143,5 @@ if __name__ == "__main__":
 ## Источники
 
 Материалы для изучения SKYPRO [skypro@skyeng.ru](https://sky.pro/#giftpopup)
+
+Проект выполнен в рамках обучения на курсе SkyPro.

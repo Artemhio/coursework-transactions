@@ -1,11 +1,28 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from functools import wraps
+from typing import Any, Callable, Dict, List
 
 import pandas as pd  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
+
+
+def log_report(func: Callable[..., str]) -> Callable[..., str]:
+    """
+    Декоратор для логирования вызова функций отчётов.
+
+    Логирует начало и успешное завершение работы функции.
+    """
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> str:
+        logger.info("Запуск отчёта: %s", func.__name__)
+        result = func(*args, **kwargs)
+        logger.info("Отчёт %s успешно завершён", func.__name__)
+        return result
+
+    return wrapper
 
 
 def get_stub_report() -> dict:
@@ -62,6 +79,7 @@ def spending_by_category(
     return grouped
 
 
+@log_report
 def build_spending_by_category_report(
     df: pd.DataFrame,
     category: str | None,
